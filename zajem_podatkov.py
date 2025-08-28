@@ -31,7 +31,7 @@ def extract_listing_links(soup):
             out.append(href)
     return out
 
-# Preverjanje Cloudflare blokade v html vsebini
+# Preveri Cloudflare blokade v html vsebini
 def is_cloudflare_block(html):
     return (
         "Sorry, you have been blocked" in html or "Cloudflare Ray ID" in html
@@ -53,6 +53,18 @@ def get_main_html(driver, page):
         return None
     return html
 
+# Zapre pojavno okno za piškotke, če se to pojavi
+def dismiss_cookie_popup(driver):
+    try:
+        btn = driver.find_element(
+            By.ID, "CybotCookiebotDialogBodyButtonAccept"
+        )
+        if btn.is_displayed():
+            btn.click()
+            time.sleep(2)
+    except NoSuchElementException:
+        pass
+
 
 def extract_size_and_obcina(soup):
     size = ""
@@ -65,6 +77,14 @@ def extract_size_and_obcina(soup):
         )
         if m:
             size = m.group(1).replace(",", ".").strip()
+            
+    if size == "":
+        h1 = soup.find("h1")
+        if h1:
+            t = h1.get_text(" ", strip=True)
+            m = re.search(r"(\d+(?:[.,]\d+)?)\s*m\s*2", t, flags=re.I)
+            if m:
+                size = m.group(1).replace(",", ".").strip()
 
 
     more_info = soup.find("div", class_=lambda c: c and "more_info" in c)
@@ -82,3 +102,21 @@ def extract_price(soup):
     if price_meta and price_meta.get("content"):
         return price_meta["content"] + " EUR"
     return ""
+
+
+# Nastavi in zažene Chrome brskalnik 
+options = uc.ChromeOptions()
+options.headless = False
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-gpu")
+options.add_argument(
+    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+)
+if not options.binary_location:
+    options.binary_location = (
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    )
+
+print("Starting Chrome browser...")
+driver = uc.Chrome(options=options)
