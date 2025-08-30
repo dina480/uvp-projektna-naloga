@@ -41,11 +41,15 @@ def is_cloudflare_block(html):
 def get_main_html(driver, page):
     url = BASE_URL.format(page=page)
     driver.get(url)
-    WebDriverWait(driver, 15).until(
-        EC.presence_of_element_located(
-            (By.CSS_SELECTOR, "div.property-box.property-normal")
+    try:
+        WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, "div.property-box.property-normal")
+            )
         )
-    )
+    except:
+        return None
+    
     time.sleep(2)
     html = driver.page_source
     if is_cloudflare_block(html):
@@ -120,3 +124,55 @@ if not options.binary_location:
 
 print("Starting Chrome browser...")
 driver = uc.Chrome(options=options)
+
+rows = []
+all_links = set()
+consecutive_empty = 0
+page = 1
+
+while consecutive_empty < MAX_CONSECUTIVE_EMPTY:
+    html = get_main_html(driver, page)
+    if page == 1:
+        dismiss_cookie_popup(driver)
+
+    if not html:
+        consecutive_empty += 1
+        page += 1
+        continue
+
+    soup = BeautifulSoup(html, "html.parser")
+    links = set(extract_listing_links(soup))
+    new_links = links - all_links
+    print(f"--- Page {page}: Found {len(new_links)} listings ---")
+
+    if not new_links:
+        consecutive_empty += 1
+        page += 1
+        continue
+
+    all_links |= new_links
+    for link in new_links:
+        m = re.search(r"_(\d+)/", link)
+        if not m:
+            print("no id:", link)
+            continue
+        listing_id = m.group(1)
+
+        driver.get(link)
+        time.sleep(5)
+        full_page = driver.page_source
+        if is_cloudflare_block(full_page) or not full_page.strip():
+            print("blocked/empty:", listing_id)
+            continue
+
+        s = BeautifulSoup(full_page, "html.parser")
+        price = extract_price(s)
+        size, obcina = extract_size_and_obcina(s)
+
+        rows.append([listing_id, link, size, price, obcina])
+        print(f"{listing_id} | {size} m2 | {price} | {obcina}")
+
+    consecutive_empty = 0
+    page += 1
+
+driver.quit()
