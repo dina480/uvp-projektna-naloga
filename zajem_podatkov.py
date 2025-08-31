@@ -176,3 +176,10 @@ while consecutive_empty < MAX_CONSECUTIVE_EMPTY:
     page += 1
 
 driver.quit()
+
+with open(CSV_FILE, "w", newline="", encoding="utf-8") as f:
+    w = csv.writer(f)
+    w.writerow(["id", "url", "size", "price", "obcina"])
+    w.writerows(rows)
+
+print("Saved:", CSV_FILE)
