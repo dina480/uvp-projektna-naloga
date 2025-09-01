@@ -69,7 +69,7 @@ def dismiss_cookie_popup(driver):
     except NoSuchElementException:
         pass
 
-
+# Izlušči željene podatke
 def extract_size_and_obcina(soup):
     size = ""
     obcina = ""
@@ -125,11 +125,13 @@ if not options.binary_location:
 print("Starting Chrome browser...")
 driver = uc.Chrome(options=options)
 
+# Obdelovanje večih strani
 rows = []
 all_links = set()
 consecutive_empty = 0
 page = 1
 
+#  Zanka teče dokler ne najde več zaporednih praznih strani
 while consecutive_empty < MAX_CONSECUTIVE_EMPTY:
     html = get_main_html(driver, page)
     if page == 1:
@@ -177,6 +179,7 @@ while consecutive_empty < MAX_CONSECUTIVE_EMPTY:
 
 driver.quit()
 
+# Nastanek CSV datoteke
 with open(CSV_FILE, "w", newline="", encoding="utf-8") as f:
     w = csv.writer(f)
     w.writerow(["id", "url", "size", "price", "obcina"])
