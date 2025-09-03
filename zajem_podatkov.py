@@ -121,6 +121,7 @@ if not options.binary_location:
     options.binary_location = (
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
     )
+# Tukaj zamenjate pot do Google Chrome brskalnika
 
 print("Starting Chrome browser...")
 driver = uc.Chrome(options=options)
